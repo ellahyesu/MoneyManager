@@ -1,0 +1,279 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap');
+
+:root {
+  color-scheme: light;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  --bg: #f5efe6;
+  --bg-strong: #f0e2d3;
+  --ink: #1d1b19;
+  --muted: #6f6a64;
+  --accent: #ff6b35;
+  --accent-2: #2ec4b6;
+  --card: #fff8f1;
+  --card-strong: #ffffff;
+  --shadow: 0 20px 60px rgba(29, 27, 25, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top right, #ffe7d6 0%, #f5efe6 45%, #f0efe9 100%);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+#app {
+  position: relative;
+  overflow: hidden;
+}
+
+#app::before {
+  content: '';
+  position: absolute;
+  top: -180px;
+  right: -220px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(46, 196, 182, 0.3) 0%, rgba(46, 196, 182, 0) 65%);
+  pointer-events: none;
+}
+
+#app::after {
+  content: '';
+  position: absolute;
+  bottom: -200px;
+  left: -180px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.28) 0%, rgba(255, 107, 53, 0) 65%);
+  pointer-events: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  padding: 32px 24px 64px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.sections {
+  display: grid;
+  gap: 24px;
+}
+
+.section {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--card-strong);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(29, 27, 25, 0.06);
+  display: grid;
+  gap: 8px;
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.card .symbol {
+  font-family: 'Source Code Pro', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.metric {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.delta {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.delta.positive {
+  color: #0f8b5f;
+}
+
+.delta.negative {
+  color: #c7511f;
+}
+
+.fear-meter {
+  display: grid;
+  gap: 12px;
+}
+
+.fear-bar {
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff6b35 0%, #f9c846 40%, #2ec4b6 100%);
+  position: relative;
+}
+
+.fear-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.watchlist-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.watchlist-table th,
+.watchlist-table td {
+  text-align: left;
+  padding: 12px 8px;
+  border-bottom: 1px solid rgba(29, 27, 25, 0.08);
+  font-size: 14px;
+}
+
+.watchlist-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.signal {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.signal.buy {
+  background: rgba(46, 196, 182, 0.2);
+  color: #0d7b72;
+}
+
+.signal.sell {
+  background: rgba(255, 107, 53, 0.2);
+  color: #c4451d;
+}
+
+.signal.hold {
+  background: rgba(111, 106, 100, 0.15);
+  color: #514d49;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.input {
+  border: 1px solid rgba(29, 27, 25, 0.2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 160px;
+  background: #fff;
+}
+
+.button {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+}
+
+.button.secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(29, 27, 25, 0.2);
+}
+
+.helper {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .watchlist-table thead {
+    display: none;
+  }
+
+  .watchlist-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .watchlist-table td {
+    border: none;
+    padding: 4px 0;
+  }
+}

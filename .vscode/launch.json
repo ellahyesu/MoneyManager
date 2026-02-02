@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-MoneyManagerApplication<backend>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.moneymanager.api.MoneyManagerApplication",
+            "projectName": "backend",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
