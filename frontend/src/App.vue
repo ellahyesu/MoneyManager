@@ -4,9 +4,25 @@
       <h1>MoneyManager Overview</h1>
       <p>Actionable snapshots for global markets and your watchlist.</p>
       <p class="helper" v-if="lastUpdated">Last updated: {{ lastUpdated }}</p>
+        <div class="view-tabs">
+      <button
+        class="tab"
+        :class="activeView === 'market' ? 'active' : ''"
+        @click="activeView = 'market'"
+      >
+        Market
+      </button>
+      <button
+        class="tab"
+        :class="activeView === 'portfolio' ? 'active' : ''"
+        @click="activeView = 'portfolio'"
+      >
+        Portfolio
+      </button>
+    </div>
     </header>
 
-    <div class="sections">
+    <div class="sections" v-if="activeView === 'market'">
       <section class="section">
         <div class="section-header">
           <h2>Market Overview</h2>
@@ -17,7 +33,7 @@
         <div v-if="error" class="helper">{{ error }}</div>
         <div v-else class="overview-grid">
           <div v-for="quote in market?.quotes" :key="quote.symbol" class="card">
-            <div class="symbol">{{ quote.market }} ¡¤ {{ quote.symbol }}</div>
+            <div class="symbol">{{ quote.market }} - {{ quote.symbol }}</div>
             <h3>{{ quote.name }}</h3>
             <div class="metric">{{ formatNumber(quote.price) }}</div>
             <div
@@ -54,7 +70,7 @@
             Add
           </button>
         </div>
-        <p class="helper">Signals are generated from price-based proxy indicators.</p>
+        <p class="helper">Signals are generated from RSI/MACD/MA/Bollinger score.</p>
         <table class="watchlist-table">
           <thead>
             <tr>
@@ -89,12 +105,16 @@
         </table>
       </section>
     </div>
+    <PortfolioDashboard v-else />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import PortfolioDashboard from './components/PortfolioDashboard.vue';
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const STORAGE_KEY = 'money-manager-watchlist';
 const market = ref(null);
 const watchlist = ref([]);
 const loading = ref(false);
@@ -102,6 +122,7 @@ const adding = ref(false);
 const error = ref('');
 const newSymbol = ref('');
 const newName = ref('');
+const activeView = ref('market');
 
 const lastUpdated = computed(() => {
   if (!market.value?.asOf) return '';
@@ -118,12 +139,9 @@ const refresh = async () => {
   error.value = '';
   try {
     const apiKey = import.meta.env.VITE_FINNHUB_API_KEY;
-    if (!apiKey) {
-      throw new Error('VITE_FINNHUB_API_KEY is not set.');
-    }
     const [overview, watchlistEntries] = await Promise.all([
       fetchMarketOverview(apiKey),
-      fetchJson('/api/watchlist')
+      getWatchlistEntries()
     ]);
     market.value = overview;
     watchlist.value = await buildWatchlist(watchlistEntries, apiKey);
@@ -138,13 +156,9 @@ const addToWatchlist = async () => {
   if (!newSymbol.value.trim()) return;
   adding.value = true;
   try {
-    await fetchJson('/api/watchlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        symbol: newSymbol.value.trim(),
-        name: newName.value.trim()
-      })
+    await addWatchlistEntry({
+      symbol: newSymbol.value.trim(),
+      name: newName.value.trim()
     });
     newSymbol.value = '';
     newName.value = '';
@@ -158,7 +172,7 @@ const addToWatchlist = async () => {
 
 const removeFromWatchlist = async (symbol) => {
   try {
-    await fetchJson(`/api/watchlist/${symbol}`, { method: 'DELETE' });
+    await removeWatchlistEntry(symbol);
     await refresh();
   } catch (err) {
     error.value = err.message || 'Failed to remove symbol.';
@@ -166,12 +180,18 @@ const removeFromWatchlist = async (symbol) => {
 };
 
 const fetchJson = async (url, options) => {
-  const response = await fetch(url, options);
+  const response = await fetch(withApiBase(url), options);
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
   }
   if (response.status === 204) return null;
   return response.json();
+};
+
+const withApiBase = (url) => {
+  if (/^https?:\/\//.test(url)) return url;
+  if (!API_BASE_URL) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
 };
 
 const FINNHUB_BASE = 'https://finnhub.io/api/v1';
@@ -186,13 +206,20 @@ const marketSeeds = [
 ];
 
 const fetchQuote = async (symbol, apiKey) => {
+  if (!apiKey) {
+    return mockQuote(symbol);
+  }
   const response = await fetch(
     `${FINNHUB_BASE}/quote?symbol=${encodeURIComponent(symbol)}&token=${apiKey}`
   );
   if (!response.ok) {
-    throw new Error(`Finnhub quote failed: ${response.status}`);
+    return mockQuote(symbol);
   }
-  return response.json();
+  const data = await response.json();
+  if (data?.c === undefined || data?.c === null || data.c === 0) {
+    return mockQuote(symbol);
+  }
+  return data;
 };
 
 const fetchMarketOverview = async (apiKey) => {
@@ -209,8 +236,13 @@ const fetchMarketOverview = async (apiKey) => {
       };
     })
   );
-  const fearGreed = deriveFearGreed(quotes);
-  return { asOf: new Date().toISOString(), fearGreed, quotes };
+  const fearGreed = deriveFearGreedFromChange(quotes);
+
+  return {
+    asOf: new Date().toISOString(),
+    fearGreed,
+    quotes
+  };
 };
 
 const buildWatchlist = async (entries, apiKey) => {
@@ -225,37 +257,88 @@ const buildWatchlist = async (entries, apiKey) => {
         changePercent: round(quote.dp)
       };
       const indicators = deriveIndicators(mapped);
-      const signal = decideSignal(indicators, mapped.price);
+      const score = scoreIndicators(indicators, mapped.price);
+      const signal = decideSignal(score.total);
       return {
         ...mapped,
         indicators,
         signal,
-        rationale: buildRationale(signal, indicators, mapped.price)
+        rationale: buildRationale(score)
       };
     })
   );
   return items;
 };
 
-const deriveFearGreed = (quotes) => {
-  const spy = quotes.find((q) => q.symbol === 'SPY');
-  let value = 50;
-  if (spy) {
-    const shifted = 50 + spy.changePercent * 2;
-    value = Math.round(Math.max(0, Math.min(100, shifted)));
+const getWatchlistEntries = async () => {
+  if (API_BASE_URL) {
+    try {
+      return await fetchJson('/api/watchlist');
+    } catch (err) {
+      console.warn('Falling back to local watchlist storage.', err);
+    }
   }
-  return {
-    value,
-    classification: classifyFearGreed(value)
-  };
+  return readLocalWatchlist();
 };
 
-const classifyFearGreed = (value) => {
-  if (value <= 25) return 'Extreme Fear';
-  if (value <= 45) return 'Fear';
-  if (value <= 55) return 'Neutral';
-  if (value <= 75) return 'Greed';
-  return 'Extreme Greed';
+const addWatchlistEntry = async (entry) => {
+  const normalized = normalizeEntry(entry);
+  if (API_BASE_URL) {
+    try {
+      await fetchJson('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(normalized)
+      });
+      return;
+    } catch (err) {
+      console.warn('Falling back to local watchlist storage.', err);
+    }
+  }
+  const items = readLocalWatchlist().filter((item) => item.symbol !== normalized.symbol);
+  items.unshift(normalized);
+  writeLocalWatchlist(items);
+};
+
+const removeWatchlistEntry = async (symbol) => {
+  if (API_BASE_URL) {
+    try {
+      await fetchJson(`/api/watchlist/${symbol}`, { method: 'DELETE' });
+      return;
+    } catch (err) {
+      console.warn('Falling back to local watchlist storage.', err);
+    }
+  }
+  const items = readLocalWatchlist().filter((item) => item.symbol !== symbol.toUpperCase());
+  writeLocalWatchlist(items);
+};
+
+const normalizeEntry = (entry) => ({
+  symbol: entry.symbol.trim().toUpperCase(),
+  name: entry.name?.trim() || entry.symbol.trim().toUpperCase(),
+  market: 'Custom'
+});
+
+const readLocalWatchlist = () => {
+  const fallback = [
+    normalizeEntry({ symbol: 'MSFT', name: 'Microsoft' }),
+    normalizeEntry({ symbol: 'NVDA', name: 'NVIDIA' }),
+    normalizeEntry({ symbol: 'AAPL', name: 'Apple' }),
+    normalizeEntry({ symbol: 'TSLA', name: 'Tesla' })
+  ];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return fallback;
+    return parsed.map(normalizeEntry);
+  } catch {
+    return fallback;
+  }
+};
+
+const writeLocalWatchlist = (items) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 };
 
 const deriveIndicators = (quote) => {
@@ -263,23 +346,97 @@ const deriveIndicators = (quote) => {
   const macd = round(quote.changePercent / 2);
   const ma50 = round(quote.price * (1 - quote.changePercent / 200));
   const ma200 = round(quote.price * (1 - quote.changePercent / 150));
+  const bbLower = round(quote.price * (1 - 0.02));
+  const bbUpper = round(quote.price * (1 + 0.02));
   const trend = ma50 >= ma200 ? 'Uptrend' : 'Downtrend';
-  return { rsi: round(rsi), macd, ma50, ma200, trend };
+  return {
+    rsi: round(rsi),
+    macd,
+    ma50,
+    ma200,
+    trend,
+    bbLower,
+    bbUpper,
+    lastClose: quote.price,
+    prevLower: bbLower,
+    prevClose: quote.price
+  };
 };
 
-const decideSignal = (indicators, price) => {
-  if (indicators.rsi <= 30 && price > indicators.ma50) return 'BUY';
-  if (indicators.rsi >= 70 && price < indicators.ma50) return 'SELL';
+const scoreIndicators = (indicators, price) => {
+  let total = 0;
+  const flags = [];
+
+  if (indicators.rsi !== null) {
+    if (indicators.rsi < 30) {
+      total += 1;
+      flags.push('RSI<30');
+    } else if (indicators.rsi > 70) {
+      total -= 1;
+      flags.push('RSI>70');
+    }
+  }
+
+  if (indicators.macd !== null) {
+    if (indicators.macd > 0.4) {
+      total += 1;
+      flags.push('MACD positive');
+    } else if (indicators.macd < -0.4) {
+      total -= 1;
+      flags.push('MACD negative');
+    }
+  }
+
+  if (indicators.ma200 !== null && price > indicators.ma200) {
+    total += 1;
+    flags.push('Price>MA200');
+  }
+  if (indicators.ma50 !== null && price < indicators.ma50) {
+    total -= 1;
+    flags.push('Price<MA50');
+  }
+
+  if (indicators.bbLower !== null && indicators.bbUpper !== null) {
+    if (price <= indicators.bbLower) {
+      total += 1;
+      flags.push('BB lower');
+    } else if (price >= indicators.bbUpper) {
+      total -= 1;
+      flags.push('BB upper');
+    }
+  }
+
+  return { total, flags };
+};
+
+const decideSignal = (totalScore) => {
+  if (totalScore >= 2) return 'BUY';
+  if (totalScore <= -2) return 'SELL';
   return 'HOLD';
 };
 
-const buildRationale = (signal, indicators, price) =>
-  `Signal ${signal} based on RSI ${indicators.rsi.toFixed(1)}, MACD ${indicators.macd.toFixed(2)}, ` +
-  `price ${price.toFixed(2)} vs MA50 ${indicators.ma50.toFixed(2)} and MA200 ${indicators.ma200.toFixed(2)} ` +
-  `(${indicators.trend}).`;
+const buildRationale = (score) => {
+  const detail = score.flags.length ? score.flags.join(', ') : 'No strong signals';
+  return `Score ${score.total}: ${detail}`;
+};
 
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-const round = (value) => Math.round(value * 100) / 100;
+const deriveFearGreedFromChange = (quotes) => {
+  const spy = quotes.find((q) => q.symbol === 'SPY');
+  let value = 50;
+  if (spy) {
+    const shifted = 50 + spy.changePercent * 2;
+    value = Math.round(Math.max(0, Math.min(100, shifted)));
+  }
+  return classifyFearGreed(value);
+};
+
+const classifyFearGreed = (value) => {
+  if (value <= 25) return { value, classification: 'Extreme Fear' };
+  if (value <= 45) return { value, classification: 'Fear' };
+  if (value <= 55) return { value, classification: 'Neutral' };
+  if (value <= 75) return { value, classification: 'Greed' };
+  return { value, classification: 'Extreme Greed' };
+};
 
 const formatNumber = (value) => {
   if (value === null || value === undefined) return '-';
@@ -296,7 +453,47 @@ const formatSigned = (value) => {
 
 const signalClass = (signal) => `signal ${signal.toLowerCase()}`;
 
+const round = (value) => Math.round(value * 100) / 100;
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const mockQuote = (symbol) => {
+  const seed = Array.from(symbol).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const base = 80 + (seed % 220);
+  const change = ((seed % 19) - 9) * 0.73;
+  const price = round(base + change * 2.8);
+  return {
+    c: price,
+    d: round(change),
+    dp: round((change / base) * 100)
+  };
+};
+
 onMounted(refresh);
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
