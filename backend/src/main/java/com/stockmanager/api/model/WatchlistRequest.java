@@ -1,4 +1,4 @@
-package com.moneymanager.api.model;
+package com.stockmanager.api.model;
 
 public class WatchlistRequest {
     private String symbol;
@@ -28,3 +28,4 @@ public class WatchlistRequest {
         this.name = name;
     }
 }
+

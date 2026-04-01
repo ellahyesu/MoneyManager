@@ -1,4 +1,4 @@
-# MoneyManager Dashboard
+# StockManager Dashboard
 
 A full-stack dashboard that surfaces key investment signals at a glance: global index prices, crypto, the Fear & Greed index, and watchlist-driven buy/sell stickers. This is a starter architecture with mocked data and a clear path to integrate real market data feeds.
 
@@ -63,8 +63,8 @@ docker compose up --build
 
 ## Notes on Data
 Market data is loaded from Finnhub directly in the frontend. Technical indicators and the Fear & Greed index are derived locally from price changes (free-tier friendly).
-- `backend/src/main/java/com/moneymanager/api/service/MarketDataService.java`
-- `backend/src/main/java/com/moneymanager/api/service/WatchlistService.java`
+- `backend/src/main/java/com/stockmanager/api/service/MarketDataService.java`
+- `backend/src/main/java/com/stockmanager/api/service/WatchlistService.java`
 
 When integrating a real data provider, you can inject API keys via environment variables and wire the HTTP client in these services.
 
@@ -73,3 +73,4 @@ When integrating a real data provider, you can inject API keys via environment v
 - Add scheduled jobs for fresh market data.
 - Expand indicators (Bollinger Bands, ATR, volume/flow metrics).
 - Add auth for personalized watchlists.
+

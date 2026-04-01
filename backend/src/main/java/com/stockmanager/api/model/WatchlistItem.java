@@ -1,4 +1,4 @@
-package com.moneymanager.api.model;
+package com.stockmanager.api.model;
 
 public class WatchlistItem {
     private final String symbol;
@@ -54,3 +54,4 @@ public class WatchlistItem {
         return rationale;
     }
 }
+

@@ -51,10 +51,10 @@
         <input class="input" v-model.number="form.realized" type="number" placeholder="Realized P/L" />
       </div>
       <div class="actions">
-        <button class="button" @click="addHolding">{{ isEditing ? 'Save' : 'Add' }}</button>
+        <button class="button" @click="submitHolding">{{ isEditing ? 'Save' : 'Add' }}</button>
         <button class="button secondary" @click="resetForm">{{ isEditing ? 'Cancel' : 'Reset' }}</button>
       </div>
-      <p class="helper">Unrealized P/L is derived from avg price, principal, and current price.</p>
+      <p class="helper">Saved holdings are reused directly by the timing playbook page.</p>
     </div>
 
     <div class="card">
@@ -72,19 +72,19 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in holdings" :key="item.id">
+          <tr v-for="item in props.holdings" :key="item.id">
             <td>{{ item.symbol }}</td>
             <td>{{ typeLabel(item.assetType) }}</td>
             <td>{{ formatNumber(item.avgPrice) }}</td>
             <td>{{ formatCurrency(item.principal) }}</td>
             <td>{{ formatNumber(item.currentPrice) }}</td>
-            <td :class="item.unrealized >= 0 ? 'positive' : 'negative'">
-              {{ formatSigned(item.unrealized) }}
+            <td :class="unrealizedValue(item) >= 0 ? 'positive' : 'negative'">
+              {{ formatSigned(unrealizedValue(item)) }}
             </td>
             <td>
               <div class="row-actions">
                 <button class="button secondary" @click="editHolding(item)">Edit</button>
-                <button class="button secondary" @click="removeHolding(item.id)">Remove</button>
+                <button class="button secondary" @click="emit('remove-holding', item.id)">Remove</button>
               </div>
             </td>
           </tr>
@@ -101,7 +101,9 @@
             <circle
               v-for="(slice, idx) in donutSlices"
               :key="slice.label"
-              cx="80" cy="80" r="54"
+              cx="80"
+              cy="80"
+              r="54"
               class="donut-slice"
               :stroke="slice.color"
               :stroke-dasharray="slice.dash"
@@ -134,27 +136,25 @@
             <span>{{ bar.label }}</span>
           </div>
         </div>
-        <p class="helper">This month: +2.4% (up)</p>
+        <p class="helper">After updating holdings here, review the Playbook tab for entry and stop zones.</p>
       </div>
 
       <div class="card insight-card">
         <h3>Rebalancing Check</h3>
         <ul class="insight-list">
-          <li>Tech allocation is 6% above your target.</li>
-          <li>Increase cash by 5% to buffer volatility.</li>
-          <li>Add 3-5% to bonds/gold for defense.</li>
+          <li>Scale new entries over multiple prices instead of a single all-in trade.</li>
+          <li>Respect stop-review levels faster when macro pressure rises.</li>
+          <li>Keep some dry powder for event-driven flushes rather than chasing strength.</li>
         </ul>
-        <button class="button">Run Rebalance Simulation</button>
       </div>
 
       <div class="card insight-card">
-        <h3>Risk Alerts</h3>
+        <h3>Workflow</h3>
         <ul class="insight-list">
-          <li>GLD volatility rising: review stop-loss/add zones.</li>
-          <li>Correlation spike: diversification benefit down.</li>
-          <li>3 watchlist names below 20-day average.</li>
+          <li>Update your average price after real trades so playbook scenarios stay realistic.</li>
+          <li>Keep current prices reasonably aligned with live market for better scenario ranges.</li>
+          <li>Recheck scenarios after FOMC, CPI, oil spikes, or geopolitical headlines.</li>
         </ul>
-        <button class="button secondary">Alert Settings</button>
       </div>
     </div>
   </section>
@@ -163,18 +163,14 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
 
-const holdings = ref([
-  {
-    id: 1,
-    symbol: 'AAPL',
-    assetType: 'US',
-    avgPrice: 180,
-    principal: 3600000,
-    currentPrice: 195,
-    realized: 200000,
-    unrealized: 300000
+const props = defineProps({
+  holdings: {
+    type: Array,
+    required: true
   }
-]);
+});
+
+const emit = defineEmits(['save-holding', 'remove-holding']);
 
 const form = reactive({
   symbol: '',
@@ -188,7 +184,7 @@ const form = reactive({
 const editingId = ref(null);
 const isEditing = computed(() => editingId.value !== null);
 
-const addHolding = () => {
+const submitHolding = () => {
   const missing = [];
   if (!form.symbol || !form.symbol.trim()) missing.push('Symbol');
   if (!form.avgPrice || form.avgPrice <= 0) missing.push('Avg Price');
@@ -198,9 +194,7 @@ const addHolding = () => {
     alert(`Missing required fields: ${missing.join(', ')}`);
     return;
   }
-  const quantity = form.principal / form.avgPrice;
-  const currentValue = quantity * form.currentPrice;
-  const unrealized = currentValue - form.principal;
+
   const record = {
     id: editingId.value ?? Date.now(),
     symbol: form.symbol.toUpperCase(),
@@ -208,19 +202,10 @@ const addHolding = () => {
     avgPrice: form.avgPrice,
     principal: form.principal,
     currentPrice: form.currentPrice,
-    realized: form.realized || 0,
-    unrealized: round(unrealized)
+    realized: form.realized || 0
   };
-  if (editingId.value !== null) {
-    const index = holdings.value.findIndex((item) => item.id === editingId.value);
-    if (index >= 0) {
-      holdings.value.splice(index, 1, record);
-    } else {
-      holdings.value.unshift(record);
-    }
-  } else {
-    holdings.value.unshift(record);
-  }
+
+  emit('save-holding', record);
   resetForm();
 };
 
@@ -244,17 +229,18 @@ const editHolding = (item) => {
   editingId.value = item.id;
 };
 
-const removeHolding = (id) => {
-  holdings.value = holdings.value.filter((item) => item.id !== id);
+const unrealizedValue = (item) => {
+  const quantity = item.principal / item.avgPrice;
+  return round(quantity * item.currentPrice - item.principal);
 };
 
 const summary = computed(() => {
-  const principal = holdings.value.reduce((sum, h) => sum + h.principal, 0);
-  const valuation = holdings.value.reduce((sum, h) => {
-    const quantity = h.principal / h.avgPrice;
-    return sum + quantity * h.currentPrice;
+  const principal = props.holdings.reduce((sum, item) => sum + item.principal, 0);
+  const valuation = props.holdings.reduce((sum, item) => {
+    const quantity = item.principal / item.avgPrice;
+    return sum + quantity * item.currentPrice;
   }, 0);
-  const realized = holdings.value.reduce((sum, h) => sum + (h.realized || 0), 0);
+  const realized = props.holdings.reduce((sum, item) => sum + (item.realized || 0), 0);
   const unrealized = valuation - principal;
   return {
     principal: round(principal),
@@ -265,21 +251,18 @@ const summary = computed(() => {
 });
 
 const allocation = computed(() => {
-  const totals = {
-    US: 0,
-    KR: 0,
-    ETF: 0,
-    ALT: 0,
-    CASH: 0
-  };
+  const totals = { US: 0, KR: 0, ETF: 0, ALT: 0, CASH: 0 };
   let totalValue = 0;
-  holdings.value.forEach((h) => {
-    const quantity = h.principal / h.avgPrice;
-    const value = quantity * h.currentPrice;
-    totals[h.assetType] += value;
+
+  props.holdings.forEach((item) => {
+    const quantity = item.principal / item.avgPrice;
+    const value = quantity * item.currentPrice;
+    totals[item.assetType] += value;
     totalValue += value;
   });
+
   const toPercent = (value) => (totalValue === 0 ? 0 : Math.round((value / totalValue) * 100));
+
   return [
     { label: 'US Stocks', value: toPercent(totals.US), color: '#2ec4b6' },
     { label: 'KR Stocks', value: toPercent(totals.KR), color: '#ff9f1c' },
@@ -353,8 +336,7 @@ const formatNumber = (value) =>
 
 const formatSigned = (value) => {
   const sign = value >= 0 ? '+' : '-';
-  const abs = Math.abs(value || 0);
-  return `${sign}${formatCurrency(abs)}`;
+  return `${sign}${formatCurrency(Math.abs(value || 0))}`;
 };
 
 const round = (value) => Math.round(value * 100) / 100;

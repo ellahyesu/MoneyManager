@@ -1,4 +1,4 @@
-package com.moneymanager.api.model;
+package com.stockmanager.api.model;
 
 public class Quote {
     private final String symbol;
@@ -41,3 +41,4 @@ public class Quote {
         return changePercent;
     }
 }
+

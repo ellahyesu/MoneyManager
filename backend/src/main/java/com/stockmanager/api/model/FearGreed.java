@@ -1,4 +1,4 @@
-package com.moneymanager.api.model;
+package com.stockmanager.api.model;
 
 public class FearGreed {
     private final int value;
@@ -17,3 +17,4 @@ public class FearGreed {
         return classification;
     }
 }
+

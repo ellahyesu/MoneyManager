@@ -2,10 +2,10 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Spring Boot-MoneyManagerApplication<backend>",
+            "name": "Spring Boot-StockManagerApplication<backend>",
             "request": "launch",
             "cwd": "${workspaceFolder}",
-            "mainClass": "com.moneymanager.api.MoneyManagerApplication",
+            "mainClass": "com.stockmanager.api.StockManagerApplication",
             "projectName": "backend",
             "args": "",
             "envFile": "${workspaceFolder}/.env"

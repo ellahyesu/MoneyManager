@@ -9,11 +9,11 @@
     <relativePath/>
   </parent>
 
-  <groupId>com.moneymanager</groupId>
-  <artifactId>money-manager</artifactId>
+  <groupId>com.stockmanager</groupId>
+  <artifactId>stock-manager</artifactId>
   <version>0.1.0</version>
-  <name>money-manager</name>
-  <description>MoneyManager API</description>
+  <name>stock-manager</name>
+  <description>StockManager API</description>
 
   <properties>
     <java.version>11</java.version>
@@ -47,3 +47,4 @@
     </plugins>
   </build>
 </project>
+

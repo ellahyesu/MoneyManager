@@ -409,6 +409,154 @@ input {
   flex-wrap: wrap;
 }
 
+.playbook-page {
+  display: grid;
+  gap: 20px;
+}
+
+.playbook-hero {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(260px, 1.3fr);
+  gap: 16px;
+}
+
+.playbook-score,
+.playbook-callout,
+.scenario-kpi,
+.macro-card {
+  background: var(--card-strong);
+  border: 1px solid rgba(29, 27, 25, 0.06);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.playbook-score strong {
+  display: block;
+  font-size: 28px;
+  margin: 6px 0;
+}
+
+.playbook-callout {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.pill.buy {
+  background: rgba(46, 196, 182, 0.16);
+  color: #0d7b72;
+}
+
+.pill.sell {
+  background: rgba(255, 107, 53, 0.18);
+  color: #c4451d;
+}
+
+.pill.hold {
+  background: rgba(111, 106, 100, 0.14);
+  color: #514d49;
+}
+
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.macro-card {
+  gap: 8px;
+}
+
+.macro-card-top,
+.scenario-head,
+.scenario-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.macro-value {
+  font-size: 24px;
+}
+
+.scenario-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.scenario-card {
+  gap: 16px;
+}
+
+.scenario-prices {
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  text-align: right;
+}
+
+.scenario-prices strong {
+  font-size: 24px;
+}
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.scenario-kpi {
+  display: grid;
+  gap: 8px;
+}
+
+.scenario-kpi strong {
+  font-size: 22px;
+}
+
+.scenario-kpi p,
+.scenario-footer p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.scenario-kpi.danger {
+  background: rgba(255, 107, 53, 0.08);
+}
+
+.pillar-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag.soft {
+  background: rgba(29, 27, 25, 0.06);
+}
+
+.empty-state {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.empty-state h3 {
+  margin: 0;
+}
+
 @keyframes dash {
   from {
     stroke-dashoffset: 340;
@@ -448,6 +596,10 @@ input {
 }
 
 @media (max-width: 720px) {
+  .playbook-hero {
+    grid-template-columns: 1fr;
+  }
+
   .watchlist-table thead {
     display: none;
   }

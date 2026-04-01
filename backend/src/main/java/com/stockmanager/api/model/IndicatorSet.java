@@ -1,4 +1,4 @@
-package com.moneymanager.api.model;
+package com.stockmanager.api.model;
 
 public class IndicatorSet {
     private final double rsi;
@@ -35,3 +35,4 @@ public class IndicatorSet {
         return trend;
     }
 }
+

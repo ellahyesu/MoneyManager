@@ -1,4 +1,4 @@
-package com.moneymanager.api.model;
+package com.stockmanager.api.model;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,3 +26,4 @@ public class MarketOverviewResponse {
         return quotes;
     }
 }
+

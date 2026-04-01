@@ -1,7 +1,7 @@
-package com.moneymanager.api.service;
+package com.stockmanager.api.service;
 
-import com.moneymanager.api.model.WatchlistEntry;
-import com.moneymanager.api.model.WatchlistRequest;
+import com.stockmanager.api.model.WatchlistEntry;
+import com.stockmanager.api.model.WatchlistRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -81,4 +81,5 @@ public class WatchlistService {
         }
     }
 }
+
 

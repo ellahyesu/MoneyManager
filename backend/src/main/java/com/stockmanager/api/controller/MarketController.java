@@ -1,7 +1,7 @@
-package com.moneymanager.api.controller;
+package com.stockmanager.api.controller;
 
-import com.moneymanager.api.model.MarketOverviewResponse;
-import com.moneymanager.api.service.MarketDataService;
+import com.stockmanager.api.model.MarketOverviewResponse;
+import com.stockmanager.api.service.MarketDataService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,3 +20,4 @@ public class MarketController {
         return marketDataService.getOverview();
     }
 }
+

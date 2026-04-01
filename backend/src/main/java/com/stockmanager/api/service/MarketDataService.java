@@ -1,7 +1,7 @@
-package com.moneymanager.api.service;
+package com.stockmanager.api.service;
 
-import com.moneymanager.api.model.FearGreed;
-import com.moneymanager.api.model.MarketOverviewResponse;
+import com.stockmanager.api.model.FearGreed;
+import com.stockmanager.api.model.MarketOverviewResponse;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -13,3 +13,4 @@ public class MarketDataService {
         return new MarketOverviewResponse(Instant.now(), new FearGreed(50, "Neutral"), List.of());
     }
 }
+

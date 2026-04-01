@@ -1,4 +1,4 @@
-package com.moneymanager.api.model;
+package com.stockmanager.api.model;
 
 public class WatchlistEntry {
     private final String symbol;
@@ -23,3 +23,4 @@ public class WatchlistEntry {
         return market;
     }
 }
+

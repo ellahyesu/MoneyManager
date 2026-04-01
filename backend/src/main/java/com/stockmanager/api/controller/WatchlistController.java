@@ -1,8 +1,8 @@
-package com.moneymanager.api.controller;
+package com.stockmanager.api.controller;
 
-import com.moneymanager.api.model.WatchlistEntry;
-import com.moneymanager.api.model.WatchlistRequest;
-import com.moneymanager.api.service.WatchlistService;
+import com.stockmanager.api.model.WatchlistEntry;
+import com.stockmanager.api.model.WatchlistRequest;
+import com.stockmanager.api.service.WatchlistService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,3 +41,4 @@ public class WatchlistController {
         watchlistService.remove(symbol);
     }
 }
+
